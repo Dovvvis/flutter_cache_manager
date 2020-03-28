@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:crypto/crypto.dart';
 
 import 'package:file/file.dart' as f;
 import 'package:file/local.dart';
@@ -18,6 +20,7 @@ import 'package:uuid/uuid.dart';
 ///Flutter Cache Manager
 ///Copyright (c) 2019 Rene Floor
 ///Released under MIT License.
+String keyToMd5(String key) => md5.convert(utf8.encode(key)).toString();
 
 class DefaultCacheManager extends BaseCacheManager {
   static const key = 'libCachedImageData';
@@ -180,7 +183,25 @@ abstract class BaseCacheManager {
     unawaited(_store.putFile(cacheObject));
     return file;
   }
+  Future<File> putFileFromFile(
+      String id,
+      File file, {
+        String eTag,
+        Duration maxAge = const Duration(days: 30),
+        String fileExtension = 'file',
+      }) async {
+    var cacheObject = await _store.retrieveCacheData(id);
+    cacheObject ??=
+        CacheObject(id, relativePath: file.path);
+    cacheObject.validTill = DateTime.now().add(maxAge);
+    cacheObject.eTag = eTag;
 
+//    final file = (await _fileDir).childFile(cacheObject.relativePath);
+
+//    await file.writeAsBytes(fileBytes);
+    unawaited(_store.putFile(cacheObject));
+    return file;
+  }
   /// Remove a file from the cache
   Future<void> removeFile(String url) async {
     final cacheObject = await _store.retrieveCacheData(url);
